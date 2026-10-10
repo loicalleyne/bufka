@@ -1,0 +1,39 @@
+asyncapi: 2.5.0
+info:
+  title: Custom claim added by the identity provider to all issued JWTs
+  version: 1.0.0
+
+# The only channel is a URL, not a Kafka topic, so this file yields no topics.
+channels:
+  https://auth.example.com/user/login:
+    publish:
+      summary: |
+        Custom claim providing information about the user and the organization where they're logged in.
+      message:
+        $ref: "#/components/messages/loginClaim"
+
+components:
+  messages:
+    loginClaim:
+      title: https://auth.example.com/user/login
+      payload:
+        type: object
+        required: [organizationId, userEmail, userId]
+        properties:
+          organizationId:
+            type: string
+            example: 212c0c75-b6c8-493e-87c6-31c64fff05bd
+          userEmail:
+            type: string
+            example: alice.smith@example.com
+          userId:
+            type: string
+            example: user_4dfd4db1-edd2-483e-a585-f33bbc8ee65d
+          tenantId:
+            type: string
+            nullable: true
+            example: "27436256189267"
+          role:
+            type: integer
+            nullable: true
+            enum: [1, 2, 3]

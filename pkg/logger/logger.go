@@ -1,0 +1,95 @@
+package logger
+
+import (
+	"fmt"
+	"log"
+	"os"
+)
+
+// Logger interface defines logging methods
+type Logger interface {
+	Debug(format string, args ...any)
+	Info(format string, args ...any)
+	Warn(format string, args ...any)
+	Error(format string, args ...any)
+	Fatal(format string, args ...any)
+}
+
+// Config holds logger configuration
+type Config struct {
+	Level  string // debug, info, warn, error
+	Format string // json, text
+}
+
+// simpleLogger is a basic logger implementation
+type simpleLogger struct {
+	logger *log.Logger
+	level  int
+}
+
+const (
+	levelDebug = iota
+	levelInfo
+	levelWarn
+	levelError
+	levelFatal
+)
+
+// New creates a new logger
+func New(cfg *Config) Logger {
+	level := parseLevel(cfg.Level)
+	return &simpleLogger{
+		logger: log.New(os.Stdout, "", log.LstdFlags),
+		level:  level,
+	}
+}
+
+func parseLevel(level string) int {
+	switch level {
+	case "debug":
+		return levelDebug
+	case "info":
+		return levelInfo
+	case "warn":
+		return levelWarn
+	case "error":
+		return levelError
+	default:
+		return levelInfo
+	}
+}
+
+func (l *simpleLogger) Debug(format string, args ...any) {
+	if l.level <= levelDebug {
+		l.logger.Printf("[DEBUG] "+format, args...)
+	}
+}
+
+func (l *simpleLogger) Info(format string, args ...any) {
+	if l.level <= levelInfo {
+		l.logger.Printf("[INFO] "+format, args...)
+	}
+}
+
+func (l *simpleLogger) Warn(format string, args ...any) {
+	if l.level <= levelWarn {
+		l.logger.Printf("[WARN] "+format, args...)
+	}
+}
+
+func (l *simpleLogger) Error(format string, args ...any) {
+	if l.level <= levelError {
+		l.logger.Printf("[ERROR] "+format, args...)
+	}
+}
+
+func (l *simpleLogger) Fatal(format string, args ...any) {
+	l.logger.Printf("[FATAL] "+format, args...)
+	os.Exit(1)
+}
+
+// Package-level convenience functions
+func Fatal(format string, args ...any) {
+	fmt.Fprintf(os.Stderr, "[FATAL] "+format+"\n", args...)
+	os.Exit(1)
+}

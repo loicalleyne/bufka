@@ -1,0 +1,52 @@
+
+# Binaries
+bufka
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test artifacts
+*.test
+*.out
+coverage.out
+
+# Build artifacts
+/bin/
+/dist/
+
+# IDE
+.juggler/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Config
+.env
+.env.local
+*.local.yaml
+*.toml
+.hexago.yaml
+/docs/superpowers/
+
+# Temporary
+/tmp/
+__debug_bin*
+.github/prompts
+*.db
+*.db.wal
+*.duckdb
+*.duckdb.wal
+
+# proto files
+/proto/
+# Release
+/completions/
+/third_party_licenses/
+.zig-cache/

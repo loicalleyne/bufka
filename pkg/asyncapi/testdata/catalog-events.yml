@@ -1,0 +1,123 @@
+asyncapi: '2.6.0'
+info:
+  title: Catalog Event Producer
+  version: '1.0.0'
+  description: |
+    This document contains the schema of JSON events produced by the catalog importer.
+    Each time an entity changes, an event is produced to a topic based on its entity type.
+    Both creations and updates are produced on the same compacted topic.
+
+    ### List of topics
+
+    * catalog.authors
+    * catalog.genres
+
+    All topics are **compacted**. Outdated revisions of a given entity (based on its Id) are removed after some time, but the latest revision is guaranteed to be kept.
+
+defaultContentType: application/json
+
+channels:
+  catalog.authors:
+    description: |
+
+    bindings:
+      kafka:
+        TopicConfiguration:
+          cleanup.policy: compact
+    subscribe:
+      summary: Contains the current state of the authors
+      message:
+        $ref: '#/components/messages/AuthorEvent'
+
+  catalog.genres:
+    bindings:
+      kafka:
+        TopicConfiguration:
+          cleanup.policy: compact
+    subscribe:
+      summary: Contains the current state of genres
+      message:
+        $ref: '#/components/messages/GenreEvent'
+
+components:
+  messages:
+    AuthorEvent:
+      name: AuthorEvent
+      title: Author creation and update
+      summary: General information about the state of an author
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/Author'
+      headers:
+        type: object
+        properties:
+          key:
+            type: string
+            description: The Author Id is used as the Kafka message key.
+
+    GenreEvent:
+      name: GenreEvent
+      title: Genre creation and update
+      summary: Information related to genres
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/Genre'
+      headers:
+        type: object
+        properties:
+          key:
+            type: string
+            description: The Genre Id is used as the Kafka message key.
+
+  schemas:
+    Author:
+      type: object
+      required:
+        - Id
+        - Name
+        - PublisherId
+        - Status
+      properties:
+        Id:
+          type: integer
+          minimum: 1
+          description: Numeric Id of the author
+        Name:
+          type: string
+          maxLength: 128
+          description: Name of the author
+        PublisherId:
+          type: integer
+          minimum: 1
+          description: Numeric Id of the author's publishing house
+        Status:
+          $ref: '#/components/schemas/EntityStatus'
+
+    Genre:
+      type: object
+      required:
+        - Id
+        - Name
+        - Code
+      properties:
+        Id:
+          type: integer
+          minimum: 1
+          description: Numeric id of the genre
+        Name:
+          type: string
+          maxLength: 1000
+          description: Name of the genre
+        Code:
+          type: string
+          maxLength: 128
+          description: Code of the genre
+        ParentId:
+          type: integer
+          minimum: 1
+          description: Parent id of the genre
+
+    EntityStatus:
+      enum: ['Active', 'Deleted']
+      default: 'Active'
+      description: Status of the entity. Entities become deleted when they are removed from the catalog. Not all events support this.

@@ -1,0 +1,189 @@
+asyncapi: '3.0.0'
+info:
+  title: API Event Producer
+  version: '1.0.1'
+  description: |
+    This document contains the schema of events produced by the store API.
+
+    All topics are **compacted**. Therefore, only the latest revision is retained for each key.
+
+    ### List of topics
+
+    * shop.store-settings
+
+defaultContentType: application/json
+
+channels:
+  shop.store-settings:
+    description: Published when a store creates or updates its settings.
+    messages:
+      UpdatedStoreSettingsEvent:
+        name: UpdatedStoreSettingsEvent
+        title: Store Id linked to the modified store settings
+        summary: Key to identify the store settings to update
+        contentType: application/json
+        payload:
+          $ref: "#/components/schemas/StoreSettings"
+        headers:
+          type: object
+          properties:
+            key:
+              type: string
+              description: The store Id is used as the Kafka message key.
+
+operations:
+  ProduceUpdatedStoreSettings:
+    action: send
+    channel:
+      $ref: "#/channels/shop.store-settings"
+
+components:
+  schemas:
+    StoreSettings:
+      type: object
+      required:
+        - StoreId
+        - Shipping
+      properties:
+        StoreId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Store Id in the shop
+        Shipping:
+            $ref: '#/components/schemas/Shipping'
+        Storefront:
+            $ref: '#/components/schemas/Storefront'
+
+    Shipping:
+      type: object
+      description: All shipping settings
+      required:
+        - Enabled
+        - Courier
+        - Freight
+        - Postal
+      properties:
+        Enabled:
+          type: boolean
+          default: false
+          description: >
+            Whether the store has enabled shipping
+        Courier:
+          $ref: '#/components/schemas/Courier'
+        Freight:
+          $ref: '#/components/schemas/Freight'
+        Postal:
+          $ref: '#/components/schemas/Postal'
+
+    Storefront:
+      type: object
+      description: All storefront settings
+      properties:
+        ShowOutOfStock:
+          type: boolean
+          default: false
+          description: >
+            Whether the store lists items that are out of stock
+        TermsAndConditionsUrl:
+          type: string
+          description: URL to the terms and conditions page for the store
+        LogoUrl:
+          type: string
+          description: URL to an image with the logo for the store
+
+    Freight:
+      type: object
+      description: Freight-specific settings
+      allOf:
+        - $ref: '#/components/schemas/CarrierOptions'
+
+    Postal:
+      type: object
+      description: Postal-specific settings
+      allOf:
+        - $ref: '#/components/schemas/CarrierOptions'
+      required:
+        - ClientId
+        - ClientSecret
+        - AccountId
+      properties:
+        ClientId:
+          type: string
+          description: The client ID for the postal API
+        ClientSecret:
+          type: string
+          description: The client secret for the postal API
+        AccountId:
+          type: string
+          description: The account ID for the postal API
+
+    Courier:
+      type: object
+      description: Courier-specific settings
+      allOf:
+        - $ref: '#/components/schemas/CarrierOptions'
+      required:
+        - DeliveryMethod
+      properties:
+        DeliveryMethod:
+          type: string
+          enum: [ standard, express ]
+          description: The delivery method for the courier API (standard or express)
+        DepotId:
+          type: string
+          description: The depot ID for the courier API
+
+    CarrierOptions:
+      type: object
+      description: Individual carrier configuration options
+      required:
+        - DefaultCurrency
+        - Priority
+        - ParcelIdentifier
+      properties:
+        ApiKey:
+          type: string
+          description: The API key for the carrier endpoint
+        DefaultCurrency:
+          type: string
+          enum: [ USD, CAD, EUR, AUD, GBP ]
+          default: USD
+          description: >
+            An __ISO 4217 currency code__.
+            <br/>
+            Only a subset of all currencies are currently supported on the platform.
+        Priority:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100
+          description: >
+            The priority for this carrier.
+            <br/>
+            Lower numbers are prioritized over higher numbers.
+        ParcelIdentifier:
+          type: string
+          description: Indicates which is the source for the parcel identifier
+        PrioritizedRoutes:
+          type: array
+          description: >
+            A list of routes with their associated priorities.
+            <br/>
+            Route Id is unique in this list, but priority can be set the same for multiple routes.
+          items:
+            $ref: '#/components/schemas/PrioritizedRoute'
+
+    PrioritizedRoute:
+      type: object
+      description: route and associated priority, used to pick the winning route.
+      required:
+        - RouteId
+        - Priority
+      properties:
+        RouteId:
+          type: string
+          description: external route id to set the priority of.
+        Priority:
+          type: int
+          description: Priority of the route

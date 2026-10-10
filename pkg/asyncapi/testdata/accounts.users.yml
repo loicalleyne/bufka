@@ -1,0 +1,119 @@
+asyncapi: 3.0.0
+info:
+  title: Message produced for the users
+  version: 1.0.0
+
+channels:
+  accounts.users:
+    address: accounts.users
+    messages:
+      subscribe.message:
+        $ref: '#/components/messages/User'
+
+operations:
+  accounts.users.subscribe:
+    action: send
+    channel:
+      $ref: '#/channels/accounts.users'
+    summary: |
+      Users present on the example platform.
+    description: >
+      Users are published as they are created or updated in the account
+      service. <br/> This is a compacted topic; outdated revisions of a given
+      entity (based on its Id) are removed after some time has passed, but the
+      latest revision is guaranteed to be kept.
+    messages:
+      - $ref: '#/channels/accounts.users/messages/subscribe.message'
+
+components:
+  messages:
+    User:
+      name: User
+      title: User
+      x-custom-key: user-event
+      summary: >
+        A User represents a person that can (or previously could) log into the
+        example platform.
+      description: >
+        Users can belong to many Organizations and switch freely between the
+        organizations they are member of.
+      headers:
+        type: object
+        properties:
+          key:
+            type: string
+            description: The user Id is used as the Kafka message key.
+      payload:
+        type: object
+        required:
+          - Id
+          - Email
+          - FirstName
+          - LastName
+          - Organizations
+        properties:
+          Id:
+            type: string
+            example: user_4dfd4db1-edd2-483e-a585-f33bbc8ee65d
+            description: The identifier for this user, unique per environment.
+          Email:
+            type: string
+            format: email
+            example: alice.smith@example.com
+            description: The email for this user, unique per environment.
+          FirstName:
+            type: string
+            example: Alice
+            description: The user's first name
+          LastName:
+            type: string
+            example: Smith
+            description: The user's last name.
+          Status:
+            type: string
+            enum:
+              - Inactive
+              - Active
+            default: Inactive
+            description: >
+              The status of the user. Consumers should interpret unknown or
+              missing values as the default of `Inactive`.
+          Organizations:
+            type: object
+            description: >-
+              The user's organization memberships, keyed by Organization Id.
+            example:
+              org_212c0c75-b6c8-493e-87c6-31c64fff05bd:
+                Status: Active
+                EffectivePermissions:
+                  - 'orders:view'
+                PermissionsSpecVersion: 1
+            additionalProperties:
+              type: object
+              description: The properties are organization Ids the user is member of.
+              required:
+                - Status
+              properties:
+                Status:
+                  type: string
+                  enum:
+                    - Inactive
+                    - Active
+                  default: Inactive
+                  description: The status of the user in this organization.
+                EffectivePermissions:
+                  type: array
+                  description: The effective permissions of the user.
+                  example:
+                    - 'orders:view'
+                    - 'users:manage'
+                  items:
+                    type: string
+                PermissionsSpecVersion:
+                  type: integer
+                  description: Version of the spec used to compute the user's permissions
+                  example: 3
+          ApiUser:
+            type: object
+            description: Information relating to api users
+            nullable: true

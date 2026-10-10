@@ -1,0 +1,7 @@
+bufka
+Copyright 2026 Loïc Alleyne
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Binary distributions include third-party Go modules; their licenses and
+NOTICE files are reproduced in the third_party_licenses/ directory.

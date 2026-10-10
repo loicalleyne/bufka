@@ -1,0 +1,84 @@
+asyncapi: 2.4.0
+
+info:
+  title: Messages produced by the Example Platform Audit Log
+  version: 1.0.0
+
+channels:
+  audit-logs.ingestion:
+    subscribe:
+      summary: >
+        Audit logs produced on the example platform.
+      description: >
+        Audit logs are ingested as they are created or updated by the platform's services.
+        <br/>
+        This is a non-compacted topic.
+      message: { $ref: "#/components/messages/AuditLog" }
+
+components:
+  messages:
+    AuditLog:
+      name: AuditLog
+      title: AuditLog
+      x-custom-key: audit-log-event
+      summary: >
+        An audit log represents a trace of a change made on the platform, such as to a user or organization.
+      description: >
+        The audit log is a way to keep track of changes made across the different services.
+        <br/>
+        This includes tracking when the change was made and by what user.
+
+      headers:
+        type: object
+        properties:
+          key:
+            type: string
+            description: The audit log Id is used the as Kafka message key.
+
+      payload:
+        type: object
+        required: [OrganizationId, Datetime, Origin, Scope, Type]
+        properties:
+          OrganizationId:
+            type: string
+            description: The identifier for the organization that the changed entity belongs to.
+            example: 45f64138-81da-41d6-baaf-f281afcdb1a3
+          Datetime:
+            type: string
+            format: date-time
+            description: >
+              The point in time in UTC, ISO-8601 format with timezone, that the event captured in this audit log happened.
+          UserId:
+            type: string
+            nullable: true
+            description: The identifier for the user that produced this audit log.
+            example: user_45f64138-81da-41d6-baaf-f281afcdb1a3
+          Origin:
+            type: array
+            description: The origin of the request
+            items:
+              type: object
+              required: [Name]
+              properties:
+                Name:
+                  type: string
+                  description: The name of the request origin.
+                  example: UI
+          Scope:
+            type: string
+            description: The team or product that the audit log originates from.
+            example: users
+          Type:
+            type: string
+            description: The type of action within a scope.
+            example: Update
+          OldData:
+            type: object
+            nullable: true
+            description: The data of the object before the change, cannot be null at the same time as NewData.
+            example: {}
+          NewData:
+            type: object
+            nullable: true
+            description: The data of the object after the change, cannot be null at the same time as OldData.
+            example: {}

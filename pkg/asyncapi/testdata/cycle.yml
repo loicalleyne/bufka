@@ -1,0 +1,42 @@
+asyncapi: 2.6.0
+info:
+  title: Cycle
+  version: 0.1.0
+channels:
+  test.tree:
+    publish:
+      message:
+        oneOf:
+          - $ref: '#/components/messages/Node'
+          - name: Other
+            payload:
+              type: object
+              properties:
+                a~b/c:
+                  $ref: '#/components/schemas/Weird~0name~1x'
+  test.external:
+    subscribe:
+      message:
+        payload:
+          $ref: 'common.yml#/components/schemas/Thing'
+components:
+  messages:
+    Node:
+      payload:
+        $ref: '#/components/schemas/Node'
+  schemas:
+    Weird~name/x:
+      type: string
+      enum: [1, true]
+    Node:
+      type: object
+      required: [Name]
+      properties:
+        Name:
+          type: string
+        Parent:
+          $ref: '#/components/schemas/Node'
+        Children:
+          type: array
+          items:
+            $ref: '#/components/schemas/Node'

@@ -1,0 +1,216 @@
+asyncapi: 2.1.0
+info:
+  title: Platform Events
+  version: 1.1.0
+  description: |
+    All events sent through Kafka
+channels:
+  platform.users/userCreated:
+    publish:
+      operationId: userCreated
+      message:
+        $ref: "#/components/messages/UserCreated"
+  shop.store-registrations/storeRegistered:
+    publish:
+      message:
+        $ref: "#/components/messages/StoreRegistered"
+  logistics.warehouses/warehouseUpdated:
+    publish:
+      message:
+        $ref: "#/components/messages/WarehouseUpdated"
+  logistics.docks/dockUpdated:
+    publish:
+      message:
+        $ref: "#/components/messages/dockUpdated"
+components:
+  messages:
+    UserCreated:
+      name: userCreated
+      title: User created event
+      summary: Inform about a new user registration in the system
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/userCreatedPayload"
+    StoreRegistered:
+      name: storeRegistered
+      title: Store registered event
+      summary: Inform about a new store registration in the system
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/storeRegisteredPayload"
+    WarehouseUpdated:
+      name: warehouseUpdated
+      title: Warehouse updated event
+      summary: Inform about a warehouse created or updated
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/warehouseUpdatedPayload"
+    dockUpdated:
+      name: dockUpdated
+      title: Dock updated event
+      summary: Inform about a loading dock created or updated
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/dockUpdatedPayload"
+  schemas:
+    userCreatedPayload:
+      type: object
+      properties:
+        UserId:
+          type: string
+        Email:
+          type: string
+        CreatedDate:
+          type: string
+          format: date-time
+        Domain:
+          type: string
+          description: Topic the event should be sent to.
+          enum: [platform.users]
+        Type:
+          type: string
+          description: The type of event sent to the topic.
+          enum: [userCreated]
+        AggregateId:
+          type: string
+          description: unique identifier for the user. Should be the same as UserId.
+        Version:
+          type: integer
+          description: The id of an event for a specific aggregate. For user creation, we should always expect that it's the first one.
+          enum: [0]
+      required:
+        - UserId
+        - Email
+        - CreatedDate
+        - Domain
+        - Type
+        - AggregateId
+        - Version
+    storeRegisteredPayload:
+      type: object
+      properties:
+        StoreId:
+          type: string
+          description: The store Id.
+        Store:
+          type: object
+          description: Store information.
+          properties:
+            Name:
+              type: string
+              description: The store name.
+            Status:
+              type: string
+              enum: [ Active, Inactive ]
+              description: The store status.
+            Plan:
+              type: string
+              description: The store's subscription plan.
+              enum: [Free, Standard, Enterprise, Trial]
+            ExpirationDate:
+              type: string
+              format: date-time
+              description: The expiration datetime of the plan in iso8601.
+              nullable: true
+            Timezone:
+              type: string
+              description: The timezone of the store, in tz database format (for eg. "America/New_York", "Europe/Berlin").
+            Currencies:
+              type: object
+              properties:
+                Primary:
+                  type: string
+                  enum: [AUD, CAD, EUR, GBP, USD, NZD]
+                  description: The primary currency of the store.
+                  nullable: true
+                Additional:
+                  type: array
+                  description: The additional currencies in ISO 4217 format.
+                  nullable: false
+                  items:
+                    type: string
+                    enum: [AUD, CAD, EUR, GBP, USD, NZD]
+              required:
+                - Primary
+          required:
+            - Name
+            - Status
+            - Plan
+            - ExpirationDate
+        OwnerId:
+          type: string
+          nullable: true
+          description: The user Id of the store owner.
+        CreatedDate:
+          type: string
+          format: date-time
+          description: The created datetime in iso8601 format.
+        _EventType:
+          type: string
+          description: The type of event sent to the topic.
+          enum: [storeRegistered]
+      required:
+        - StoreId
+        - Store
+        - OwnerId
+        - CreatedDate
+        - _EventType
+    warehouseUpdatedPayload:
+      type: object
+      properties:
+        WarehouseId:
+          type: string
+          description: The warehouse Id. (UUID)
+        Name:
+          type: string
+          description: The warehouse name.
+        Status:
+          type: string
+          description: Status of the warehouse.
+          enum: [Active, Inactive, Deleted]
+        Address:
+          type: object
+          description: The warehouse address.
+          properties:
+            Street:
+              type: string
+              nullable: true
+            City:
+              type: string
+              nullable: true
+            Country:
+              type: string
+              nullable: true
+            Latitude:
+              type: number
+              nullable: true
+            Longitude:
+              type: number
+              nullable: true
+        _EventType:
+          type: string
+          enum: [warehouseUpdated]
+      required:
+        - WarehouseId
+        - Name
+        - Status
+        - _EventType
+    dockUpdatedPayload:
+      type: object
+      properties:
+        DockId:
+          type: string
+          description: The dock Id. (UUID)
+        WarehouseId:
+          type: string
+          description: The warehouse the dock belongs to.
+        Capacity:
+          type: integer
+          description: Number of trucks the dock can serve at once.
+        _EventType:
+          type: string
+          enum: [dockUpdated]
+      required:
+        - DockId
+        - WarehouseId
+        - _EventType

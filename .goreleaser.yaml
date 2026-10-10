@@ -1,0 +1,119 @@
+# GoReleaser config for bufka (https://goreleaser.com).
+#
+# bufka needs CGO (ADBC driver manager, Arrow C data interface), so every
+# target is built from a single macOS runner with explicit C toolchains:
+#   - darwin/{amd64,arm64}: Apple clang with -arch (universal SDK)
+#   - linux/{amd64,arm64}:  zig cc/c++ targeting glibc 2.28
+# This keeps us on GoReleaser OSS (split/merge builds are Pro-only).
+#
+# Local dry run:  goreleaser release --snapshot --clean
+version: 2
+
+project_name: bufka
+
+before:
+  hooks:
+    - go mod download
+    - ./scripts/completions.sh
+    - ./scripts/third-party-licenses.sh
+
+builds:
+  - &build
+    id: darwin-amd64
+    main: .
+    binary: bufka
+    goos: [darwin]
+    goarch: [amd64]
+    env:
+      - CGO_ENABLED=1
+      - CC=clang -arch x86_64
+      - CXX=clang++ -arch x86_64
+      - MACOSX_DEPLOYMENT_TARGET=12.0
+    flags: [-trimpath]
+    ldflags:
+      - -s -w
+      - -X github.com/loicalleyne/bufka/pkg/version.version={{ .Tag }}
+      - -X github.com/loicalleyne/bufka/pkg/version.commit={{ .FullCommit }}
+      - -X github.com/loicalleyne/bufka/pkg/version.buildDate={{ .Date }}
+      - -X github.com/loicalleyne/bufka/pkg/version.builtBy=goreleaser
+  - <<: *build
+    id: darwin-arm64
+    goarch: [arm64]
+    env:
+      - CGO_ENABLED=1
+      - CC=clang -arch arm64
+      - CXX=clang++ -arch arm64
+      - MACOSX_DEPLOYMENT_TARGET=12.0
+  - <<: *build
+    id: linux-amd64
+    goos: [linux]
+    goarch: [amd64]
+    env:
+      - CGO_ENABLED=1
+      - CC=zig cc -target x86_64-linux-gnu.2.28
+      - CXX=zig c++ -target x86_64-linux-gnu.2.28
+  - <<: *build
+    id: linux-arm64
+    goos: [linux]
+    goarch: [arm64]
+    env:
+      - CGO_ENABLED=1
+      - CC=zig cc -target aarch64-linux-gnu.2.28
+      - CXX=zig c++ -target aarch64-linux-gnu.2.28
+
+archives:
+  - formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - NOTICE
+      - README.md
+      - completions/*
+      - third_party_licenses/**/*
+
+checksum:
+  name_template: checksums.txt
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude: ["^docs:", "^test:", "^chore:"]
+
+release:
+  github:
+    owner: loicalleyne
+    name: bufka
+
+# Homebrew Cask (replaces the deprecated `brews` formula generator).
+# Casks install the prebuilt binary on both macOS and Linux.
+homebrew_casks:
+  - name: bufka
+    repository:
+      owner: loicalleyne
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    directory: Casks
+    homepage: https://github.com/loicalleyne/bufka
+    description: Kafka topics to DuckDB, with a TUI and SQL REPL
+    license: Apache-2.0
+    commit_author:
+      name: goreleaserbot
+      email: bot@goreleaser.com
+    completions:
+      bash: completions/bufka.bash
+      zsh: completions/bufka.zsh
+      fish: completions/bufka.fish
+    caveats: |
+      bufka loads the DuckDB ADBC driver at runtime. Install it once with:
+        bufka setup
+    hooks:
+      post:
+        # The binary is not notarized yet: drop the quarantine attribute so
+        # Gatekeeper does not block it.
+        install: |
+          if OS.mac? && system_command("/usr/bin/xattr", args: ["-h"]).exit_status == 0
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/bufka"]
+          end
