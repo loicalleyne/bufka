@@ -31,7 +31,7 @@ builds:
       - MACOSX_DEPLOYMENT_TARGET=12.0
     flags: [-trimpath]
     ldflags:
-      - -s -w
+      - -s -w -extldflags=-s
       - -X github.com/loicalleyne/bufka/pkg/version.version={{ .Tag }}
       - -X github.com/loicalleyne/bufka/pkg/version.commit={{ .FullCommit }}
       - -X github.com/loicalleyne/bufka/pkg/version.buildDate={{ .Date }}

@@ -13,10 +13,10 @@ jobs:
     # zig for linux (see .goreleaser.yaml).
     runs-on: macos-14
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       - uses: mlugg/setup-zig@v2
@@ -25,7 +25,7 @@ jobs:
           # Its cache restores .zig-cache/ into the checkout, which makes
           # GoReleaser refuse to run on a "dirty" tree.
           use-cache: false
-      - uses: goreleaser/goreleaser-action@v6
+      - uses: goreleaser/goreleaser-action@v7
         with:
           distribution: goreleaser
           version: "~> v2"
